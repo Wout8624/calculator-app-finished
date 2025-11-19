@@ -8,28 +8,41 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+    dependencies-job:
+      runs-on: ubuntu-latest
 
-    runs-on: ubuntu-latest
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v5
 
-    strategy:
-      matrix:
-        node-version: [20.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+        - name: Setup Node.js
+          uses: actions/setup-node@v4
+          with:
+            node-version: '20.x'
 
-    steps:
-      - uses: actions/checkout@v5
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-      - run: npm ci
-      - run: npm run build --if-present
-      - run: npm test
+        - name: Install dependencies
+          run: npm install
+        
 
-      
-      - run: npm ci
-      - run: npm run build --if-present
-      - run: npm test
-      - name: Verification
-        run: ls -alhR
+      # Step 4: Build / Compile code if build script exists
+        - name: Build project
+          run: npm run build --if-present
+
+      # Step 5: Bundle project into zip (all app files + node_modules) 
+        - name: Bundle project into zip
+          run: |
+            mkdir -p dist
+            zip -r dist/app.zip . -x ".git" -x "dist/*"
+        - name: List files
+          run: ls -alh
+
+         # Step 7: Run unit tests
+        - name: Run unit tests
+          run: npm test
+
+      # artifact
+        - name: Upload ZIP as artifact
+          uses: actions/upload-artifact@v5.0.0
+          with:
+            name: test-report
+            path: test-results//*.xml
